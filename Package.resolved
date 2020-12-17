@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "Fractions",
+        "repositoryURL": "git@github.com:Secretum-MB/Swift_Fractions.git",
+        "state": {
+          "branch": null,
+          "revision": "0e1d4bd1f45b0fc664bd92eadd38181de37fb5af",
+          "version": "1.0.4"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
