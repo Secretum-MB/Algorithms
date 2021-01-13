@@ -196,7 +196,7 @@ public struct BinarySearchTree<Element: Comparable> {
 		else {
 			let next = self.min(from: node.right)
 			if next !== node.right {
-				transplant(replace: next!, by: next!.right)
+				transplant(replace: next!, by: next!.right) // free up next's right slot
 				next?.right = node.right
 				next?.right!.parent = next
 			}

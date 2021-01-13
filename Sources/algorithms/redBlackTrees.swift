@@ -7,9 +7,8 @@
 // Properties of Red-Black Trees:
 // 1. Every node is either red or black
 // 2. The root is black
-// 3. The leaves are black (these are the nil pointers, do we actually instantiate nodes for these?)
-// 4. If a node is red, then each of its children are black
-// 5. For each node, all simple paths from it to descendant leaves contains the 
+// 3. If a node is red, then each of its children are black
+// 4. For each node, all simple paths from it to descendant leaves contains the 
 // 	  the same number of black nodes.
 //
 // The black-height of a node x, bh(x), is the number of black nodes along a 
@@ -24,41 +23,50 @@
 // can be performed in O(lg n)
 //
 
+private enum RBTnodeColor {
+	case red, black 
+} 
+
 
 public class NodeRBT<Element> {
-	
-	var key:	Element
-	var parent: NodeRBT<Element>?
-	var left:	NodeRBT<Element>?
-	var right:	NodeRBT<Element>?
-	var color = "Black"
 
-	public init(key: Element) {
+	var 	 key:	 Element?
+	var 	 left:	 NodeRBT<Element>?
+	var 	 right:	 NodeRBT<Element>?
+	weak var parent: NodeRBT<Element>?
+	fileprivate var color: RBTnodeColor = .black
+
+	public init(key: Element? = nil) {
 		self.key = key
 	}
 }
 
+// for debugging tree
 extension NodeRBT: CustomStringConvertible {
 	public var description: String {
-		return "Key: \(key); Parent: \(parent?.key);Left: \(left?.key); Right: \(right?.key);"
+		return "Key: \(key);\t Parent: \(parent?.key);\t Left: \(left?.key);\t Right: \(right?.key);\t Color: \(color);"
 	}
 }
 
 
-struct RedBlackTree<Element: Comparable> {
+public struct RedBlackTree<Element: Comparable> {
 
+	private var nil_node = NodeRBT<Element>()
 	private(set) public var root: NodeRBT<Element>?
 
-	public init() {}
+	public init() {
+		self.root = nil_node
+	}
 
 	// insertion and deletion can break properties of tree;
 	// rotations restructure the tree locally by rotating around input node
 	// this is one part of getting the tree back in comformaty with properties
-	// // // assumes node's right child is not nil (investigate this)
-	public mutating func rotateLeft(on node: NodeRBT<Element>) {
+	//
+	// called such that node's right child is not nil
+	private mutating func rotateLeft(on node: NodeRBT<Element>) {
 		let R = node.right
 		node.right = R!.left
-		if R!.left != nil {R!.left!.parent = node}
+		if R!.left !== self.nil_node { R!.left!.parent = node }
 		R!.parent = node.parent
 
 		if node.parent == nil 			   {self.root = R}
@@ -69,11 +77,11 @@ struct RedBlackTree<Element: Comparable> {
 		node.parent = R
 	}
 
-	// symmetric to above: assumes node has a left child
-	public mutating func rotateRight(on node: NodeRBT<Element>) {
+	// symmetric to above: called such that node has a left child
+	private mutating func rotateRight(on node: NodeRBT<Element>) {
 		let L = node.left
 		node.left = L!.right
-		if L!.right != nil {L!.right!.parent = node}
+		if L!.right !== self.nil_node { L!.right!.parent = node }
 		L!.parent = node.parent
 
 		if node.parent == nil 			   {self.root = L}
@@ -84,37 +92,223 @@ struct RedBlackTree<Element: Comparable> {
 		node.parent = L
 	}
 
-	public func search(key: Element) -> NodeRBT<Element>? {
-		var node = self.root
+	// called at the end of insert to correct colors and rotate tree
+	private mutating func insertFixup(_ node: NodeRBT<Element>) {
+		var z = node
+		// z is always red at top of loop, if parent too, then violation 3
+		while z.parent != nil && z.parent!.color == .red {
 
-		while node != nil && node!.key != key {
-			if key < node!.key {node = node?.left}
-			else 			   {node = node?.right}
+			// structure one: parent is left child of grandparent
+			if z.parent === z.parent!.parent!.left {
+				let uncle = z.parent!.parent!.right
+
+				// red uncle allows for simple color swapping and moving up tree
+				if uncle!.color == .red {
+					uncle!.color 			= .black
+					z.parent!.color 		= .black
+					z.parent!.parent!.color = .red
+					z = z.parent!.parent!
+					continue
+
+				// uncle is black or nil_node, simple color change breaks rule 4
+				} else if z === z.parent!.right {
+					z = z.parent!
+					self.rotateLeft(on: z)
+				}
+				z.parent!.color 		= .black
+				z.parent!.parent!.color = .red
+				self.rotateRight(on: z.parent!.parent!)
+
+			// structure two: parent is right child of grandparent: just reverse
+			} else {
+				let uncle = z.parent!.parent!.left
+				if uncle!.color == .red {
+					uncle!.color 			= .black
+					z.parent!.color 		= .black
+					z.parent!.parent!.color = .red
+					z = z.parent!.parent!
+					continue
+				} else if z === z.parent!.left {
+					z = z.parent!
+					self.rotateRight(on: z)
+				}
+				z.parent!.color 		= .black
+				z.parent!.parent!.color = .red
+				self.rotateLeft(on: z.parent!.parent!)
+			}
 		}
-		return node
+		// make root black in case above changed it or node is root
+		self.root!.color = .black
 	}
 
-	public mutating func insert_BT(_ node: NodeRBT<Element>) {
+	public mutating func insert(node: NodeRBT<Element>) {
+		if node.key == nil { return }
+
 		var parent: NodeRBT<Element>? = nil
 		var place = self.root
 
-		while place != nil {
+		while place !== self.nil_node {
 			parent = place
-			if node.key < place!.key {place = place!.left}
-			else 					 {place = place!.right}
+			if node.key! < place!.key! {place = place!.left}
+			else 					   {place = place!.right}
 		}
 		node.parent = parent
 
-		if parent == nil 			   {self.root     = node}
-		else if node.key < parent!.key {parent!.left  = node}
-		else 					 	   {parent!.right = node}
+		if parent == nil 			     {self.root 	= node}
+		else if node.key! < parent!.key! {parent!.left  = node}
+		else 						     {parent!.right = node}
+
+		node.color = .red
+		node.left = self.nil_node 
+		node.right = self.nil_node
+		insertFixup(node)
+	}
+
+	public func search(key: Element) -> NodeRBT<Element>? {
+		var node = self.root
+
+		while node !== self.nil_node {
+			if node!.key == key { return node }
+
+			if key < node!.key! {node = node?.left}
+			else 			    {node = node?.right}
+		}
+		return nil
+	}
+
+	public func min(from node: NodeRBT<Element>?) -> NodeRBT<Element>? {
+		var node =  node
+		while node?.left !== self.nil_node { node = node!.left }
+		return node
+	}
+
+	public mutating func delete(node: NodeRBT<Element>) {
+
+		// links old's parent to new and new to parent
+		func transplant(replace: NodeRBT<Element>, by: NodeRBT<Element>) {
+			
+			if replace.parent == nil {
+				self.root = by
+			} else if replace.parent!.left === replace {
+				replace.parent!.left = by
+			} else {
+				replace.parent!.right = by
+			}
+			by.parent = replace.parent  // connects nil_node.parent to tree 
+		}
+
+		let z = node
+		var z_color = z.color
+		var child: NodeRBT<Element>
+
+		// if node has less than 2 children same as normal binary tree
+		if node.left === self.nil_node {
+			child = node.right!  // may be the nil_node
+			transplant(replace: node, by: child)
+		} else if node.right === self.nil_node {
+			child = node.left!
+			transplant(replace: node, by: child)
+
+		} else {
+			// next is successor node and it has at most right child (from min)
+			let next = self.min(from: z.right)
+			child = next!.right!
+			z_color = next!.color
+
+			// case where successor is child of z
+			if next === z.right {
+				child.parent = next  // connects nil_node.parent to tree
+			
+			// connect child to tree independent from next to free next's right
+			} else {
+				transplant(replace: next!, by: child)
+				next!.right = z.right
+				next!.right!.parent = next
+			}
+			transplant(replace: z, by: next!)
+			next!.left = z.left
+			next!.left!.parent = next
+			next!.color = z.color
+		}
+		// check if delete/moved node was black, requiring fix-up
+		if z_color == .black {
+			print("ENTERING FIXUP\n")
+			deleteFixup(child)
+		}
+	}
+
+	// performs necessary colorings and rotations after delete operation
+	private mutating func deleteFixup(_ node: NodeRBT<Element>) {
+		var x = node
+		while x !== self.root && x.color == .black {
+
+			if x === x.parent!.left {
+				var sibling = x.parent!.right!  // logically cannot be nil_node
+
+				// case 1: sibling is red: makes sibling black for cases 2-4
+				if sibling.color == .red {
+					sibling.color   = .black
+					x.parent!.color = .red
+					rotateLeft(on: x.parent!)
+					sibling = x.parent!.right!
+				}
+				// case 2: both of sibling's children are black
+				if sibling.left!.color == .black && sibling.right!.color == .black {
+					sibling.color = .red
+					x = x.parent!
+				
+				} else {
+					// case 3: only sibling's right child is black
+					if sibling.right!.color == .black {
+						sibling.color 	    = .red
+						sibling.left!.color = .black
+						rotateRight(on: sibling)
+						sibling = x.parent!.right!
+					}
+					// case 4: sibling's right child is red or was made red by case 3
+					sibling.color = x.parent!.color
+					x.parent!.color 	 = .black
+					sibling.right!.color = .black
+					rotateLeft(on: x.parent!)
+					x = self.root!
+				}
+			// x is its parent's right child (identical to above but reverse left/right)
+			} else {
+				var sibling = x.parent!.left!
+
+				if sibling.color == .red {
+					sibling.color   = .black
+					x.parent!.color = .red
+					rotateRight(on: x.parent!)
+					sibling = x.parent!.left!
+				}
+				if sibling.left!.color == .black && sibling.right!.color == .black {
+					sibling.color = .red
+					x = x.parent!
+				
+				} else {
+					if sibling.left!.color == .black {
+						sibling.color 	     = .red
+						sibling.right!.color = .black
+						rotateLeft(on: sibling)
+						sibling = x.parent!.left!
+					}
+					sibling.color = x.parent!.color
+					x.parent!.color 	= .black
+					sibling.left!.color = .black
+					rotateRight(on: x.parent!)
+					x = self.root!
+				}
+			}
+		}
+		x.color = .black
 	}
 
 	public func traverse(_ node: NodeRBT<Element>?) {
-		if node != nil {
+		if node !== self.nil_node {
 			traverse(node?.left)
 			traverse(node?.right)
-			print(node)
+			print(node!)
 		}
 	}
 }
@@ -122,7 +316,7 @@ struct RedBlackTree<Element: Comparable> {
 
 
 
-func test_rotations() -> RedBlackTree<Int> {
+func sample_tree1() -> RedBlackTree<Int> {
 
 	// builds: tree from textbook page 331
 	var a = RedBlackTree<Int>()
@@ -142,20 +336,52 @@ func test_rotations() -> RedBlackTree<Int> {
 	let n20 = NodeRBT(key: 20)
 	let n22 = NodeRBT(key: 22)
 
-	a.insert_BT(n7)
-	a.insert_BT(n4)
-	a.insert_BT(n6)
-	a.insert_BT(n3)
-	a.insert_BT(n2)
-	a.insert_BT(n11)
-	a.insert_BT(n9)
-	a.insert_BT(n18)
-	a.insert_BT(n14)
-	a.insert_BT(n12)
-	a.insert_BT(n17)
-	a.insert_BT(n19)
-	a.insert_BT(n22)
-	a.insert_BT(n20)
+	a.insert(node: n7)
+	a.insert(node: n4)
+	a.insert(node: n6)
+	a.insert(node: n3)
+	a.insert(node: n2)
+	a.insert(node: n11)
+	a.insert(node: n9)
+	a.insert(node: n18)
+	a.insert(node: n14)
+	a.insert(node: n12)
+	a.insert(node: n17)
+	a.insert(node: n19)
+	a.insert(node: n22)
+	a.insert(node: n20)
+
+	return a
+}
+
+func sample_tree2() -> RedBlackTree<Int> {
+
+	//builds tree from textbook page 334
+	var a = RedBlackTree<Int>()
+
+	let n1 = NodeRBT(key: 11)
+	let n2 = NodeRBT(key: 14)
+	let n3 = NodeRBT(key: 15)
+	let n4 = NodeRBT(key: 2)
+	let n5 = NodeRBT(key: 1)
+	let n6 = NodeRBT(key: 7)
+	let n7 = NodeRBT(key: 5)
+	let n8 = NodeRBT(key: 8)
+	let n9 = NodeRBT(key: 4)
+
+	a.insert(node: n1)
+	a.insert(node: n2)
+	a.insert(node: n3)
+	a.insert(node: n4)
+	a.insert(node: n5)
+	a.insert(node: n6)
+	a.insert(node: n7)
+	a.insert(node: n8)
+	a.insert(node: n9)
+
+	a.insert(node: NodeRBT(key: 9))
+	a.insert(node: NodeRBT(key: 8))
+	a.delete(node: n6)
 
 	return a
 }

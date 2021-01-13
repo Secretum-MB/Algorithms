@@ -99,7 +99,8 @@ func sorting_performance_test(n: Int, dims: Array<Int>) {
 	let test_dim = dims			// the dimensions of arrays tested
 
 	let algorithms: [Any] = [insertionSort, bubbleSort, humanSort,
-							mergeSort, heapSort, quickSort_random, countingSort]
+							mergeSort, heapSort, quickSort_random, 
+							countingSort]
 
 	var results: [Int: Array<Double>] = [:]
 	for each in 0..<algorithms.count {results[each] = []}

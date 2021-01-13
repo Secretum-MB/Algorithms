@@ -76,7 +76,7 @@ func humanSort( _ lst: [Int]) -> [Int] {
 
 func mergeSort( _ lst: inout [Int], _ start: Int, _ end: Int) {
 
-	func merge( _ lst: inout [Int], _ start: Int, _ mid: Int, _ end: Int) {
+	func merge() {
 
 		let L = Array(lst[start...mid])
 		let R = Array(lst[mid+1...end])
@@ -88,26 +88,26 @@ func mergeSort( _ lst: inout [Int], _ start: Int, _ end: Int) {
 		var R_i = 0
 		var i = start
 
-		while L_i <= L_end || R_i <= R_end {
+		while L_i <= L_end && R_i <= R_end {
 
-			if L_i > L_end {
-				lst.replaceSubrange(i...end, with: R[R_i...R_end])
-				return			
-			} else if R_i > R_end {	
-				lst.replaceSubrange(i...end, with: L[L_i...L_end])
-				return
+			if L[L_i] < R[R_i] {
+				lst[i] = L[L_i]
+				L_i += 1; i += 1
 			} else {
-				if L[L_i] < R[R_i] {
-					lst[i] = L[L_i]
-					L_i += 1; i += 1
-				} else {
-					lst[i] = R[R_i]
-					R_i += 1; i += 1
-				}
+				lst[i] = R[R_i]
+				R_i += 1; i += 1
 			}
 		}
+		while L_i <= L_end {
+			lst[i] = L[L_i]
+			L_i += 1; i += 1
+		}
+		while R_i <= R_end {
+			lst[i] = R[R_i]
+			R_i += 1; i += 1
+		}
 	}
-	
+
 	if start >= end {
 
 		return
@@ -117,9 +117,8 @@ func mergeSort( _ lst: inout [Int], _ start: Int, _ end: Int) {
 
 	mergeSort(&lst, start, mid)
 	mergeSort(&lst, mid+1, end)
-	merge    (&lst, start, mid, end)
+	merge()
 }
-
 
 
 // heap sort runs in n lg n like mergeSort but does so by mutating 
