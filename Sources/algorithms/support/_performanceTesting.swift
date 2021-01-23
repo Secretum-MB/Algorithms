@@ -99,7 +99,8 @@ func sorting_performance_test(n: Int, dims: Array<Int>) {
 	let test_dim = dims			// the dimensions of arrays tested
 
 	let algorithms: [Any] = [insertionSort, bubbleSort, humanSort,
-							mergeSort, heapSort, quickSort_random, 
+							heapSort, mergeSort,
+							quickSort, quickSort_random,
 							countingSort]
 
 	var results: [Int: Array<Double>] = [:]
@@ -120,14 +121,16 @@ func sorting_performance_test(n: Int, dims: Array<Int>) {
 				
 				start = DispatchTime.now()
 				
+				// first three algos and heapSort
 				if let algo = algorithm as? ([Int]) -> [Int] {
 					_ = algo(test_array)
+
+				// mergeSort and quickSort
 				} else if let algo = algorithm as? (inout [Int], Int, Int) -> () {
 					copy_test_array = test_array
 					algo(&copy_test_array, 0, copy_test_array.count-1)
-				} else if let algo = algorithm as? (inout [Int]) -> () {
-					copy_test_array = test_array
-					algo(&copy_test_array)
+
+				// countingSort
 				} else if let algo = algorithm as? ([Int], Int) -> [Int] {
 					_ = algo(test_array, 999)
 				}

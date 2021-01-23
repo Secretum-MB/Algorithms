@@ -1,5 +1,8 @@
 
 // Heap-property: parent is >= (<= if MinHeap) children, recursively
+// building a heap out of an n size array takes O(n) time
+// the heapify function takes O(lg n) time
+// so insert and extractMax is lg(n)
 //
 public struct MaxHeap {
 
@@ -22,6 +25,8 @@ public struct MaxHeap {
 
 	private func buildHeap(_ array: inout Array<Int>) {
 
+		// in binary tree each level contains twice as many nodes
+		// bottom half of array are all lowest level elements (no children)
 		for i in (0...array.count/2).reversed() {
 			heapify(&array, self.heapSize, i)
 		}

@@ -53,16 +53,17 @@ func minMax_simultaneously(_ arr: [Int]) -> (Int, Int) {
 // in order to find the median of sequence let i = arr.count/2 + 1 for odd seq.
 // if sequence is even length, above is right median; remove +1 to find left.
 //
-func randomizedSelect(_ arr: inout [Int], _ start: Int, _ end: Int, at i: Int) -> Int {
+func randomizedSelect(_ arr: [Int], start: Int, end: Int, at i: Int) -> Int {
+	var arr = arr
 
 	// these subfunction come straight out of quickSort (random variant)
-	func partition_random(_ arr: inout [Int], _ start: Int, _ end: Int) -> Int {
+	func partition_random() -> Int {
 		let random_i = Int.random(in: start...end)
 		arr.swapAt(random_i, end)
-		return partition(&arr, start, end)
+		return partition()
 	}
 
-	func partition(_ arr: inout [Int], _ start: Int, _ end: Int) -> Int {
+	func partition() -> Int {
 		let pivot = arr[end]
 		var q = start - 1
 
@@ -80,7 +81,7 @@ func randomizedSelect(_ arr: inout [Int], _ start: Int, _ end: Int, at i: Int) -
 		return arr[start]
 	}
 
-	let q = partition_random(&arr, start, end)
+	let q = partition_random()
 	let num_smaller = q - start + 1
 	if num_smaller == i {	// x are smaller and we want x'th smallest
 		return arr[q]		// so: value in pivot is our answer
@@ -88,9 +89,9 @@ func randomizedSelect(_ arr: inout [Int], _ start: Int, _ end: Int, at i: Int) -
 
 	// if pivot does not contain answer, repeat for the correct partition
 	if i < num_smaller {
-		return randomizedSelect(&arr, start, q-1, at: i)
+		return randomizedSelect(arr, start: start, end: q-1, at: i)
 	} else {
-		return randomizedSelect(&arr, q + 1, end, at: i-num_smaller)
+		return randomizedSelect(arr, start: q + 1, end: end, at: i-num_smaller)
 	}
 }
 

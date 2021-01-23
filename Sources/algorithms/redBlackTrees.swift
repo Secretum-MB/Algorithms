@@ -29,7 +29,6 @@ private enum RBTnodeColor {
 
 
 public class NodeRBT<Element> {
-
 	var 	 key:	 Element?
 	var 	 left:	 NodeRBT<Element>?
 	var 	 right:	 NodeRBT<Element>?
@@ -232,7 +231,6 @@ public struct RedBlackTree<Element: Comparable> {
 		}
 		// check if delete/moved node was black, requiring fix-up
 		if z_color == .black {
-			print("ENTERING FIXUP\n")
 			deleteFixup(child)
 		}
 	}

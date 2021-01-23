@@ -124,7 +124,8 @@ func mergeSort( _ lst: inout [Int], _ start: Int, _ end: Int) {
 // heap sort runs in n lg n like mergeSort but does so by mutating 
 // the input array in place, 'no' extra memory required!
 //
-func heapSort(_ arr: inout [Int]) {
+func heapSort(_ arr: [Int]) -> [Int] {
+	var arr = arr
 
 	func maxHeapify(_ heap_size: Int, _ i: Int) {
 
@@ -154,6 +155,8 @@ func heapSort(_ arr: inout [Int]) {
 		arr.swapAt(0, i)
 		maxHeapify(i, 0)
 	}
+
+	return arr
 }
 
 
@@ -165,7 +168,7 @@ func heapSort(_ arr: inout [Int]) {
 //
 func quickSort(_ arr: inout [Int], _ start: Int, _ end: Int) {
 
-	func partition(_ arr: inout [Int], _ start: Int, _ end: Int) -> Int {
+	func partition() -> Int {
 		let pivot = arr[end] 
 		var q = start - 1  // q will be the demarcation between partitions
 
@@ -180,7 +183,7 @@ func quickSort(_ arr: inout [Int], _ start: Int, _ end: Int) {
 	}
 
 	if start < end {
-		let q = partition(&arr, start, end)
+		let q = partition()
 		quickSort(&arr, start, q-1)
 		quickSort(&arr, q + 1, end)
 	}
@@ -188,16 +191,18 @@ func quickSort(_ arr: inout [Int], _ start: Int, _ end: Int) {
 
 
 // quickSort with random pivoting
+// Now no input can illicit the worst running time. My testing shows this
+// slower than the regular quickSort on random arrays. Higher constant factor.
 //
 func quickSort_random(_ arr: inout [Int], _ start: Int, _ end: Int) {
 
-	func partition_random(_ arr: inout [Int], _ start: Int, _ end: Int) -> Int {
+	func partition_random() -> Int {
 		let random_i = Int.random(in: start...end)
 		arr.swapAt(random_i, end)
-		return partition(&arr, start, end)
+		return partition()
 	}
 
-	func partition(_ arr: inout [Int], _ start: Int, _ end: Int) -> Int {
+	func partition() -> Int {
 		let pivot = arr[end]
 		var q = start - 1
 
@@ -212,26 +217,30 @@ func quickSort_random(_ arr: inout [Int], _ start: Int, _ end: Int) {
 	}
 
 	if start < end {
-		let q = partition_random(&arr, start, end)
-		quickSort(&arr, start, q-1)
-		quickSort(&arr, q + 1, end)
+		let q = partition_random()
+		quickSort_random(&arr, start, q-1)
+		quickSort_random(&arr, q + 1, end)
 	}
 }
 
 
 
 // The below algorithms do not use comparison to sort! They are therefore not
-// bound to the worst case running time of n lg n. They can run in linear time!
+// bound to the best case running time of n lg n. They can run in linear time!
 // at the cost that some conditions must be met by the data to be sorted.
 
 
-
-// countingSort requires that all values in input array are non-negative
-// between 0 and k, and that we know the value of k going into it.
-// it will work if you overestimate value for k, but not the other way.
-// this slow it down very little. but realize this is LINEAR time sorting!!
-// it is also Stable: duplicates appear in results in same order as they
-// do in input array.
+// Counting-Sort requires that we're sorting integers. As the implementation makes
+// clear, its critical that the data is discrete and have fixed space between them.
+// Will sort in linear time if the largest value, k, is not enormous.
+// Simplest if values are >= 0. Ideally, we know the value of k going into it, otherwise
+// we'll overestimate it (won't work if underestimated) and waste memory.
+// This will slow it down very little.
+//
+// If data can be negative integers: add parameter for lowest value. Size of storage
+// is now k-smallest+1. To map values into storage: arr[i] - smallest.
+//
+// it is also Stable: duplicates appear in results in same order as they do in input array.
 //
 func countingSort(_ arr: [Int], _ k: Int) -> [Int] {
 
@@ -260,6 +269,70 @@ func countingSort(_ arr: [Int], _ k: Int) -> [Int] {
 	}
 	return results
 }
+
+
+// re-implementing counting sort such that it can sort an array of objects.
+// Below ADT has key property that is integer >= 0 which will be used to sort.
+
+// generic sorting function uses a property of the node, not all generic types 
+// have this propety, and would therefore not work. Solution: require that the 
+// generic type comform to a protocol that requires the needed property.
+protocol NodeContainer_p {
+
+	var key: Int { get }
+}
+
+
+// as an aside, if we inherit from NSObject we can use its CustomStringConvertible
+// or debugDescription property to retrieve instance's memory address. no need
+// to call super.init(). Maybe this okay for debugging complex classes?
+//
+class Node_t: NodeContainer_p {
+	public private(set) static var running_ids = 0
+
+	public private(set) var key: Int  		// unique int >= 0 for sorting
+	public let field_one: 		 String
+	public let field_two: 		 Double
+	public let field_three: 	 Character
+
+	public init(field_one: String, field_two: Double, field_three: Character) {
+		self.field_one   = field_one
+		self.field_two   = field_two
+		self.field_three = field_three
+		
+		self.key = Node_t.running_ids
+		Node_t.running_ids += 1
+	}
+}
+
+extension Node_t: CustomStringConvertible {
+	public var description: String {
+		return "key: \(key); \(field_one); \(field_two); \(field_three)\n"
+	}
+}
+
+
+func countingSort_obj<T: NodeContainer_p>(_ arr: [T], _ k: Int) -> [T] {
+	
+	var storage = Array(repeating: 0, count: k+1)
+	var results = arr
+
+	for i in 0..<arr.count {
+		storage[arr[i].key] = storage[arr[i].key] + 1
+	}
+
+	for i in 1..<storage.count {
+		storage[i] = storage[i] + storage[i-1]
+	}
+
+	for i in (0..<arr.count).reversed() {
+		results[storage[arr[i].key] - 1]  = arr[i]
+		storage[arr[i].key] -= 1
+	}
+
+	return results
+}
+
 
 
 // another sorting algorithm, with expected running time of O(n) is bucketSort
