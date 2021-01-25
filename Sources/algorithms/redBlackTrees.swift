@@ -23,37 +23,70 @@
 // can be performed in O(lg n)
 //
 
+
 private enum RBTnodeColor {
 	case red, black 
 } 
 
 
 public class NodeRBT<Element> {
+
 	var 	 key:	 Element?
 	var 	 left:	 NodeRBT<Element>?
 	var 	 right:	 NodeRBT<Element>?
 	weak var parent: NodeRBT<Element>?
 	fileprivate var color: RBTnodeColor = .black
 
+	fileprivate var size = 1  // see discussion below
+
 	public init(key: Element? = nil) {
 		self.key = key
 	}
 }
 
-// for debugging tree
 extension NodeRBT: CustomStringConvertible {
 	public var description: String {
-		return "Key: \(key);\t Parent: \(parent?.key);\t Left: \(left?.key);\t Right: \(right?.key);\t Color: \(color);"
-	}
+		return "Key: \(key);\nParent: \(parent?.key);\nLeft: \(left?.key);\t" +
+	 	       "Right: \(right?.key);\nColor: \(color);\tSize: \(size)\n"
+	}	
 }
+
+// vanilla implementation of Red-Black-Tree does not require the nodes to store 
+// a property corresponding to its size, defined below. But doing so allows us to
+// collect Order Statistics ("what node falls in the Xth position?[think, median]")
+// Also, what is the rank (order stat) of a given node. These can be gathered from
+// an unordered set (like array) in O(n) time. When data in a balanced BST, we can
+// get such information in O(lg n) time!
+//
+// A node's size is 1 (itself) plus the number of nodes in its left/right subtrees. 
+// A node with a left and right child but no grandchildren would have size of 3. 
+// Each child would have size of 1. The nil_node will have size of 0.
+//
+// Necessary modifications: both inserting and deleting requires changes to sizing
+// of numerous nodes within the tree. Further, the insert and delete Fixup helper
+// functions require further modifications to node's sizes.
+// Pro-tip: isolate as precisely as possible the line(s) that are the root cause.
+// This shows that its to rotation functions that are causing the trouble. 
+// Insight with these is that they only change the height of the node their called
+// on and its required left/right child, as the case may be. Simple to fix.
+//
+// Insertion: modify Insert by adding a line that incraments size of all nodes we
+//  touch on our way down to the leaves. Modifying Rotation take care of rest.
+// 
+// Deletion: modify Delete by adding a call to a helper function that will
+// traverse up the tree from above the delete node to the root correcting size
+// on each node it touches. This function should run prior to the normal
+// DeleteFixup which causes rotations.
+//
 
 
 public struct RedBlackTree<Element: Comparable> {
 
-	private var nil_node = NodeRBT<Element>()
+	private(set) public var nil_node = NodeRBT<Element>()
 	private(set) public var root: NodeRBT<Element>?
 
 	public init() {
+		self.nil_node.size = 0
 		self.root = nil_node
 	}
 
@@ -74,6 +107,10 @@ public struct RedBlackTree<Element: Comparable> {
 
 		R!.left = node
 		node.parent = R
+
+		// this corrects node's sizes after effects of a rotation
+		R!.size = node.size
+		node.size = 1 + node.left!.size + node.right!.size
 	}
 
 	// symmetric to above: called such that node has a left child
@@ -89,6 +126,10 @@ public struct RedBlackTree<Element: Comparable> {
 
 		L!.right = node
 		node.parent = L
+
+		// this corrects node's sizes after effects of a rotation
+		L!.size = node.size
+		node.size = 1 + node.left!.size + node.right!.size
 	}
 
 	// called at the end of insert to correct colors and rotate tree
@@ -148,6 +189,8 @@ public struct RedBlackTree<Element: Comparable> {
 
 		while place !== self.nil_node {
 			parent = place
+
+			place!.size += 1  // added to augment tree for Order Statistics
 			if node.key! < place!.key! {place = place!.left}
 			else 					   {place = place!.right}
 		}
@@ -158,7 +201,7 @@ public struct RedBlackTree<Element: Comparable> {
 		else 						     {parent!.right = node}
 
 		node.color = .red
-		node.left = self.nil_node 
+		node.left  = self.nil_node 
 		node.right = self.nil_node
 		insertFixup(node)
 	}
@@ -229,6 +272,10 @@ public struct RedBlackTree<Element: Comparable> {
 			next!.left!.parent = next
 			next!.color = z.color
 		}
+
+		// transplant helper function deleted/moved nodes requiring sizing update
+		deleteFixup_OrderStats(child)
+
 		// check if delete/moved node was black, requiring fix-up
 		if z_color == .black {
 			deleteFixup(child)
@@ -304,65 +351,130 @@ public struct RedBlackTree<Element: Comparable> {
 
 	public func traverse(_ node: NodeRBT<Element>?) {
 		if node !== self.nil_node {
+			print(node!)
 			traverse(node?.left)
 			traverse(node?.right)
-			print(node!)
 		}
+	}
+
+	// In order to maintain Order Statistics, maintain node sizes upon deletion
+	// A node has been removed from the tree. Traverse up adjusting sizes
+	private func deleteFixup_OrderStats(_ node: NodeRBT<Element>) {
+		var curr = node.parent
+		while curr != nil {
+			curr!.size = 1 + curr!.left!.size + curr!.right!.size
+			curr = curr!.parent
+		}
+	}
+
+	/* A node's rank is its order in the set making up the tree.
+	 * For example, rank of 1 means its the node with the lowest key.
+	 * A rank of 5 would mean there are four nodes lower than it in tree.
+	 */
+	public func rank(node: NodeRBT<Element>) -> Int? {
+		var curr = self.root
+		var num_smaller = 0
+
+		while curr !== self.nil_node {
+			if curr === node {
+				return num_smaller + curr!.left!.size + 1
+
+			} else if node.key! < curr!.key! {
+				curr = curr!.left
+			} else {
+				num_smaller += curr!.left!.size + 1
+				curr = curr!.right
+			}
+		}
+		return nil
+	}
+
+	/* Given a rank between 1 and size of collection as a parameter
+	 * this function will return the node that has that rank. 
+	 * Entering the rank of the center of the collection will give you
+	 * the node representing the median in the set.
+	 */
+	public func select(rank x: Int) -> NodeRBT<Element>? {
+		var curr = self.root
+		var num_smaller = 0
+
+		while curr !== self.nil_node {
+			let curr_rank = num_smaller + curr!.left!.size + 1
+
+			if curr_rank == x 	  { return curr }
+			else if curr_rank > x { curr = curr!.left }
+			else {
+				num_smaller += curr!.left!.size + 1
+				curr = curr!.right
+			}
+		}
+		return nil
 	}
 }
 
 
 
-
 func sample_tree1() -> RedBlackTree<Int> {
 
-	// builds: tree from textbook page 331
-	var a = RedBlackTree<Int>()
-	
-	let n2 =  NodeRBT(key: 2)
-	let n3 =  NodeRBT(key: 3)
-	let n4 =  NodeRBT(key: 4)
-	let n6 =  NodeRBT(key: 6)
-	let n7 =  NodeRBT(key: 7)
-	let n9 =  NodeRBT(key: 9)
-	let n11 = NodeRBT(key: 11)
-	let n12 = NodeRBT(key: 12)
-	let n14 = NodeRBT(key: 14)
-	let n17 = NodeRBT(key: 17)
-	let n18 = NodeRBT(key: 18)
-	let n19 = NodeRBT(key: 19)
-	let n20 = NodeRBT(key: 20)
-	let n22 = NodeRBT(key: 22)
+	var tree = RedBlackTree<Int>()
 
-	a.insert(node: n7)
-	a.insert(node: n4)
-	a.insert(node: n6)
-	a.insert(node: n3)
-	a.insert(node: n2)
-	a.insert(node: n11)
-	a.insert(node: n9)
-	a.insert(node: n18)
-	a.insert(node: n14)
-	a.insert(node: n12)
-	a.insert(node: n17)
-	a.insert(node: n19)
-	a.insert(node: n22)
-	a.insert(node: n20)
+	let n1  = NodeRBT(key: 26)
+	let n2  = NodeRBT(key: 17)
+	let n3  = NodeRBT(key: 41)
+	let n4  = NodeRBT(key: 14)
+	let n5  = NodeRBT(key: 21)
+	let n6  = NodeRBT(key: 10)
+	let n7  = NodeRBT(key: 16)
+	let n8  = NodeRBT(key: 19)
+	let n9  = NodeRBT(key: 21)
+	let n10 = NodeRBT(key: 7)
+	let n11 = NodeRBT(key: 12)
+	let n12 = NodeRBT(key: 14)
+	let n13 = NodeRBT(key: 20)
+	let n14 = NodeRBT(key: 3)
+	let n15 = NodeRBT(key: 30)
+	let n16 = NodeRBT(key: 47)
+	let n17 = NodeRBT(key: 28)
+	let n18 = NodeRBT(key: 38)
+	let n19 = NodeRBT(key: 35)
+	let n20 = NodeRBT(key: 39)
 
-	return a
+	tree.insert(node: n1)
+	tree.insert(node: n2)
+	tree.insert(node: n3)
+	tree.insert(node: n4)
+	tree.insert(node: n5)
+	tree.insert(node: n6)
+	tree.insert(node: n7)
+	tree.insert(node: n8)
+	tree.insert(node: n9)
+	tree.insert(node: n10)
+	tree.insert(node: n11)
+	tree.insert(node: n12)
+	tree.insert(node: n13)
+	tree.insert(node: n14)
+	tree.insert(node: n15)
+	tree.insert(node: n16)
+	tree.insert(node: n17)
+	tree.insert(node: n18)
+	tree.insert(node: n19)
+	tree.insert(node: n20)
+
+	tree.delete(node: n2)
+
+	return tree
 }
 
 func sample_tree2() -> RedBlackTree<Int> {
 
-	//builds tree from textbook page 334
 	var a = RedBlackTree<Int>()
 
 	let n1 = NodeRBT(key: 11)
-	let n2 = NodeRBT(key: 14)
-	let n3 = NodeRBT(key: 15)
-	let n4 = NodeRBT(key: 2)
-	let n5 = NodeRBT(key: 1)
-	let n6 = NodeRBT(key: 7)
+	let n2 = NodeRBT(key: 2)
+	let n3 = NodeRBT(key: 14)
+	let n4 = NodeRBT(key: 1)
+	let n5 = NodeRBT(key: 7)
+	let n6 = NodeRBT(key: 15)
 	let n7 = NodeRBT(key: 5)
 	let n8 = NodeRBT(key: 8)
 	let n9 = NodeRBT(key: 4)
@@ -376,10 +488,6 @@ func sample_tree2() -> RedBlackTree<Int> {
 	a.insert(node: n7)
 	a.insert(node: n8)
 	a.insert(node: n9)
-
-	a.insert(node: NodeRBT(key: 9))
-	a.insert(node: NodeRBT(key: 8))
-	a.delete(node: n6)
 
 	return a
 }
