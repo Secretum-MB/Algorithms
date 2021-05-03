@@ -1,3 +1,14 @@
+// Like a linked list, Binary Search Trees are chained together nodes
+// that are objects or struct instances. The difference is that each node
+// has 3 pointers - parent, left child, right child.
+// The other big difference is that a strong invariant is maintained which
+// imbues the structure with an architecture that allow us to traverse it
+// very very quickly.
+//
+// binary-search-tree property:
+//   if y is left  child of x, y.key is <  x.key
+//   if y is right child of x, y.key is >= x.key (one must carry equal values)
+//
 // supported operations:
 // Search, Max, Min, Predecessor, Successor, Insert, Delete
 // they can be used therefore also as:
@@ -5,16 +16,26 @@
 // performance depends on the height of the tree, which in turn
 // depends on how well the tree is balanced.
 //
-// All the operations above run in O(tree height)
+// All the operations above run in O(tree height), or O(h)
 // (issue is, how well is the tree balanced)
 //
-// binary-search-tree property:
-//   if y is left  child of x, y.key is <= x.key
-//   if y is right child of x, y.key is >= x.key
+// A randomly built binary search tree has expected height of lg n.
+// The position that nodes take in the tree depend on the order in which they
+// are inserted. This in turn effects how well the ultimate balance is.
+// Generally, trees are not build with random insertion orders, but I did
+// implement one such init below. Instead special BSTs are used, see below.
 //
-// A randomly built binary search tree has expected height of lg n
 //
-
+// Speciallized BSTs, discussed in other files, such as Red-Black trees and
+// AVL trees exit that ensure a well balanced tree and therefore operations
+// are all O(Lg N)
+// (this is achieved for we only ever need to traverse the height of the tree
+// (because of the BST property). The height of a balanced tree is Lg N because
+// at every level the size of the tree doubles! That is a tree with a height of 
+// 10 has double the nodes that a tree with height 9 has. Yet we only need to
+// traverse one extra level to cut through all of the extra nodes!!).
+//
+// 
 
 // no need to inherit here, but thought it was cool
 public class NodeBT<Element>: Node<Element> {

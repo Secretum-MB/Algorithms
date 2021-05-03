@@ -17,7 +17,7 @@
 // (the black-height of a Red-Black Tree is the black-height of its root).
 // 
 // Properties ensure that the black-height of tree is at most 2 lg(n + 1)
-// The trees themselves have height O(lg n)
+// The trees themselves have height Lg n.
 //
 // all operations: Search, Min, Max, Predecessor, Successor, Insert, Delete
 // can be performed in O(lg n)
@@ -55,8 +55,8 @@ extension NodeRBT: CustomStringConvertible {
 // a property corresponding to its size, defined below. But doing so allows us to
 // collect Order Statistics ("what node falls in the Xth position?[think, median]")
 // Also, what is the rank (order stat) of a given node. These can be gathered from
-// an unordered set (like array) in O(n) time. When data in a balanced BST, we can
-// get such information in O(lg n) time!
+// an unordered set (like array) in O(n) expected time. When data in a balanced 
+// BST, we can get such information in O(lg n) time!
 //
 // A node's size is 1 (itself) plus the number of nodes in its left/right subtrees. 
 // A node with a left and right child but no grandchildren would have size of 3. 
@@ -66,7 +66,7 @@ extension NodeRBT: CustomStringConvertible {
 // of numerous nodes within the tree. Further, the insert and delete Fixup helper
 // functions require further modifications to node's sizes.
 // Pro-tip: isolate as precisely as possible the line(s) that are the root cause.
-// This shows that its to rotation functions that are causing the trouble. 
+// This shows that the rotation functions are causing the trouble. 
 // Insight with these is that they only change the height of the node their called
 // on and its required left/right child, as the case may be. Simple to fix.
 //
@@ -276,7 +276,7 @@ public struct RedBlackTree<Element: Comparable> {
 		// transplant helper function deleted/moved nodes requiring sizing update
 		deleteFixup_OrderStats(child)
 
-		// check if delete/moved node was black, requiring fix-up
+		// check if deleted/moved node was black, requiring fix-up
 		if z_color == .black {
 			deleteFixup(child)
 		}
