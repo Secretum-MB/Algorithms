@@ -1,9 +1,38 @@
+/*
+ Heap - an optimal implementation of a Priority Queue
+ A heap, or binary heap, data structure is an array implementation of a nearly
+ complete binary tree. Binary because elements have at most two children, left
+ and right. Nearly complete as the tree is complete at all levels except perhaps
+ at the lowest. The members are at the array indices and we compute an arbitrary
+ member's parent, left/right child, by simple arithmatic with member's position.
+ 
+ In addition to priority queues, heaps are used in wide variety of ways, such as
+ order statistics. Their invariant and tree structure, and constant-time array
+ index access make them very fast at what they can do. Many other data strucutres
+ and algorithms use heaps to achieve their ends.
 
-// Heap-property: parent is >= (<= if MinHeap) children, recursively
-// building a heap out of an n size array takes O(n) time
-// the heapify function takes O(lg n) time
-// so insert and extractMax is lg(n)
-//
+ The heapSize attribute is the number of members in the heap. When a member is
+ removed, it is merely moved to the end of the array, and the heapSize is decre-
+ mented and all methods know not to access the array beyond this point.
+ Normally a second property is maintained, heap length. This records the length
+ of the array. This is needed in a language like C, not in Swift, where we can
+ just request that knowledge from built-in methods. Also Swift can dynamically
+ add to the length of an array, no need to be careful in same way as in C.
+
+ Heap Property:
+ Max-Heap: heap[parent(i)] >= heap[i]  // parents are least as large as children
+ Min-Heap: heap[parent(i)] <= heap[i]  // children are least as large as parents
+
+ Performance:
+ buildHeap  : O(N)     // would seem like O(N lg N) but not in fact right
+ heapify    : O(lg N)
+ insert     : O(lg N)
+ extractMax : O(lg N)
+ increaseKey: O(lg N)
+ max        : O(1)
+
+*/
+
 public struct MaxHeap {
 
 	public private(set) var heap: [Int] = []
@@ -58,6 +87,7 @@ public struct MaxHeap {
 
 	public var max: Int {
 		get {
+			if self.heapSize == 0 { return Int.min }
 			return self.heap[0]
 		}
 	}
@@ -89,9 +119,9 @@ public struct MinHeap {
 	public private(set) var heap: [Int] = []
 	public private(set) var heapSize = 0
 
-	private let parent = { (i: Int) in return (i-1)/2}
-	private let left   = { (i: Int) in return i*2+1}
-	private let right  = { (i: Int) in return i*2+2}
+	public let parent = { (i: Int) in return (i-1)/2}
+	public let left   = { (i: Int) in return i*2+1}
+	public let right  = { (i: Int) in return i*2+2}
 
 	public init() {}
 
@@ -136,6 +166,7 @@ public struct MinHeap {
 
 	public var min: Int {
 		get {
+			if self.heapSize == 0 { return Int.max }
 			return self.heap[0]
 		}
 	}
@@ -161,6 +192,29 @@ public struct MinHeap {
 	}
 }
 
+
+/*
+ A stack is a container data structure that organizes and handles its data
+ following the LIFE method (or Last-In, First-out).
+ Think of a stack as a stack of books. You place a new book at the top of the
+ stack and must take books off from the top as well. So the oldest item is at the
+ bottom and must be removed very last.
+ 
+ A stack can be implemented in an array or as an linked list. Below I implement
+ both: first with an array.
+ The central methods are push and pop. Push adds a new value to the top of the
+ stack if the stack is not already full. Pop returns the value at the top of the
+ stack if the stack is not empty and removes it.
+ 
+ Notice that in the array implementation elements are not actually removed, the
+ top attribute maintains the index within the array that corresponds to the top
+ of the stack. The push function may overwrite old (previously pop'ed) values.
+
+ Performance:
+ All functions run in O(1) time.
+ perhaps the init may be slower depending on how Swift implemented the Array()
+
+*/
 
 public struct Stack {
 
@@ -202,8 +256,37 @@ public struct Stack {
 }
 
 
-// a circular queue
-//
+/*
+ A queue is a container data structure that organizes and handles its data
+ following the FIFO method (or First-in, First-Out).
+ Just like a queue in real life, the person who arrives first has been waiting
+ the longest and gets to leave the queue first. Also, new arrivals have to be
+ added to the end of the queue. Therefore we need attributes for head and tail.
+
+ A queue can be implemented with an array or with a linked list (both below). A
+ Priority Queue is a queue that is sorted by a priority, some value that discrim-
+ inates between the members to give a priviledge in the ordering. The best way
+ to implement that is a Min or Max Heap, but a linked list or array works too.
+
+ The central methods on a queue are Enqueue (add a memeber to the back of queue)
+ and Dequeue (retrieve the member at the head of the queue).
+
+ Realize that in an array implementation, when enough members have been added
+ to the queue to reach the index corresponding to the queue's capacity no new
+ members may be added, even though many members may have been dequeued and the 
+ front of the array is unused! This either prevents us from continuing to use
+ the array at the same capacity or requires us to make a new larger array, or
+ overwrite the array with the values still "live".
+ A better approach was taken here, to make the queue CIRCULAR!
+ The head and tail attributes are allowed to wrap around the array. We use the
+ modulus (%) operator to calculate indexes that wrap around.
+ (This is not a problem with a linked list implementation.)
+
+ Performance: (standard queue)
+ Like the operations of a stack, all are O(1)
+
+*/
+
 public struct Queue {
 
 	public private(set) var queue: [Int] = []
@@ -266,9 +349,32 @@ public class Node<Element> {
 }
 
 
-// Doubly-linked list
-// made Circular here with constant insertion time using tail attribute
-//
+/*
+ A linked list is an data structure where class objects or structs (called nodes)
+ are connected in linear order by embodying them with a pointer to the next in 
+ the sequence.
+ Unlike an array, these are not contigious in memory and you can add to them
+ without limit! The drawback is that you cannot access members in constant time
+ (you have to traverse the list looking for the node that matches the desired).
+
+ A list can be Doubly-Linked, this means that in addition to the next pointer,
+ there is a pointer from each node pointing to the previous node.
+ This allows us to delete nodes from the linked list in constant time!
+
+ The mutating operations, insert and delete, work by manipulating these pointers.
+
+ Here I've implemented a CIRCULAR linked list. These have pointers from the tail
+ back to the head and from the head back to the tail. Rare that you'll need this
+ but some applications/problems you run into may benefit from being modelled in
+ this way. None of the below structures relies on this being circular.
+
+ Performance:
+ Insert: O(1)
+ Search: O(N)
+ Delete: O(1)  -> When the list is Doubly-Linked (otherwise, O(N))
+
+*/
+
 public struct LinkedList<Element: Equatable> {
 
 	public private(set) var head: Node<Element>?
@@ -278,7 +384,7 @@ public struct LinkedList<Element: Equatable> {
 		return self.head == nil
 	}
 
-	// insert nodes as head of list
+	// insert nodes at head of list
 	public mutating func insert(node: Node<Element>) {
 		if self.head == nil {
 			node.next = node
@@ -341,6 +447,17 @@ extension LinkedList: CustomStringConvertible {
 }
 
 
+/*
+ Here I show a stack implemented with a linked list.
+ Its cool that you can use it without caring or realizing there is a linked
+ list under the hood. This allows us to bypass giving the stack a capacity.
+ In this implementation the push method builds the object from the input key,
+ it is likely that we would want to have caller build it and pass it in as there
+ may be complicated sattelite data to go with it.
+ Likewise, probably want pop to return the struct, not just the key.
+
+*/
+
 public struct Stack_LinkedList<Element: Equatable> {
 
 	public private(set) var list = LinkedList<Element>()
@@ -369,6 +486,18 @@ public struct Stack_LinkedList<Element: Equatable> {
 	}
 }
 
+
+/*
+ Here I show a queue implemented with a linked list.
+ No need to concern ourselves with capacity or making anything circular.
+ It is required that the linked list we're building on top of has both head and
+ tail attributes. Since insertions in linked list happen at head, this will be
+ the back of the queue; the linked list tail attribute corresponds to the front
+ of the queue.
+ My comments above about the struct returning only the key and creating its own 
+ Node apply here as well. The problem you need to solve will be the judge.
+
+*/
 
 public struct Queue_LinkedList<Element: Equatable> {
 

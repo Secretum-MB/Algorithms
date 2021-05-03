@@ -1,8 +1,41 @@
 import Foundation
 
 
-// insertionSort, bubbleSort, humanSort are examples of Incremental algorithms
+/* 
+ There are two broad classes of sorting algorithms: the more common comparison
+ sorters and non-comparison sorting. Comparison sorters compare values in the
+ input to determine where they ought relatively belong. The other class does not
+ perform this comparison between members.
+ The best worst-case run time of comparison sort algorithms is O(N Lg N).
+ The other class can break this and achieve O(N). 
 
+ Speed is the most important consideration when choosing an algorithm.
+ Algorithms from the fist class are often used, even though they have worse
+ asymptotic performance, because they do not need to make assumptions to be valid 
+ that the other class needs to make.
+
+ Another important consideration is choosing an algorithm is whether it sorts
+ in-place or not. Algorithms that sort in-place do not requrie more than a constant
+ number of members stored outside of the input. Otherwise, the amount of memory
+ the algorithm requires grows with the input size - becoming expensive.
+
+ Another consideration is stability. Stability refers to the algorithm leaving 
+ the ordering of equal-valued members unchanged upon sorting. That is, if x and
+ y are of the same value, and appear in that order in the input, the sorted
+ output will preserve the ordering of x and y. 
+*/
+
+
+
+/* insertion sort is an in-place sorting algorithm, it mutates the input array
+ * In this implementation I chose to pass the input by value rather than reference.
+ * Worst-case run time is "theta" O(n^2)
+ * Realize that the time required depends on how out-of-sort the array is: if it
+ * is already sorted, it would finish in linear time in the size of the input.
+ * The average run time then is somewhere between N and N^2.
+ * Stable sort - equal values are not swapped.
+ * This algorithm is efficient for small inputs: used in practice when appropriate.
+ */
 func insertionSort( _ lst: [Int]) -> [Int] {
 	var lst = lst
 
@@ -21,8 +54,20 @@ func insertionSort( _ lst: [Int]) -> [Int] {
 }
 
 
+/* Bubble sort can also sort the array in-place, requring no additional memory.
+ * Each completion of the inner for-loop guarantees the largest value moves to 
+ * its correct position at the top of the array. While any swapping occured,
+ * we must go through the entire for loop again. If the smallest value was
+ * initially at the top of the array, we would need as many times through the
+ * for loop as there are elements in the input, so: O(N^2)
+ * Although a perfectly sorted input will be processed in linear time,
+ * partially sorted input will not benefit as insertionSort did. Because each
+ * pass through its for-loop achieves less, getting values nearer their
+ * correct position, not all the way to it (except the highest value).
+ * Stable sort - equal values are not swapped.
+ * This algorithm is just inferior, simple, and not used in practice.
+ */
 func bubbleSort( _ lst: [Int]) -> [Int] {
-
 	var lst = lst
 	var swapped = true
 	var tmp: Int
@@ -42,9 +87,17 @@ func bubbleSort( _ lst: [Int]) -> [Int] {
 	return lst
 }
 
-
+/* This is just a toy sorting algorithm that I made to capture an intuitive
+ * sorting procedure. It requires a new array be constructed that will capture
+ * the sorted array, so not in-place. It works by identifying the smallest value
+ * from the input, placing it into the new array, removing it from the input.
+ * Then the function is called recursively until the input array is empty.
+ * Performance is aweful: we have to recurse as many times as there are elements
+ * in the input; and in each iterate over the array to find the smallest. Since
+ * the array we iterate over in last step shrinks, performance is probably a bit
+ * better than O(N^2). This algorithm is stable - inner function sequential. 
+ */
 func humanSort( _ lst: [Int]) -> [Int] {
-	
 	func _smallest( _ lst: [Int]) -> Int {
 		var value: Int?
 		var index = 0
@@ -72,8 +125,19 @@ func humanSort( _ lst: [Int]) -> [Int] {
 }
 
 
-// mergeSort is an example of a Divide-and-conquer approach
-
+/* An example of a Divide-and-Conquer algorithm. The sorting problem is
+ * broken down into smaller and smaller sorting problems until you are asked
+ * to sort an array of size 1, which is trivial. This is done by breaking the
+ * input into a left half and right half, over and over again. Small but
+ * increasingly large sorted arrays are constructed by merging the sorted left
+ * and right parts - merely by comparing their leftmost elements. (This is a
+ * simplified account of what happens, in reality mutations are to the same
+ * array, we merely restrict the range of the indexes upon consideration.)
+ * Asymptoticly optimal - O(N lg N)  lg N divisions, N comparisons inside merge
+ * Does not sort in-place: merge requires construction of two new arrays,
+ *   each which is half as large as portion of input under consideration: O(N).
+ * Stable sort - merge's comparison between left/right prioritizes left (<=)
+ */
 func mergeSort( _ lst: inout [Int], _ start: Int, _ end: Int) {
 
 	func merge() {
@@ -90,7 +154,7 @@ func mergeSort( _ lst: inout [Int], _ start: Int, _ end: Int) {
 
 		while L_i <= L_end && R_i <= R_end {
 
-			if L[L_i] < R[R_i] {
+			if L[L_i] <= R[R_i] {
 				lst[i] = L[L_i]
 				L_i += 1; i += 1
 			} else {
@@ -121,9 +185,18 @@ func mergeSort( _ lst: inout [Int], _ start: Int, _ end: Int) {
 }
 
 
-// heap sort runs in n lg n like mergeSort but does so by mutating 
-// the input array in place, 'no' extra memory required!
-//
+/* Utilizes the max-heap data structure to sort the input array.
+ * First, a max-heap is constructed out of the input array - O(N)
+ * The heap is then iterated over in reverse order - we swap the very end of the
+ * heap array with the value in the 0th position (must be the largest value),
+ * then we decrease the heap size and run heapify to get the next largest value
+ * to bubble up to the head of the heap. O (lg N)
+ * We continue iterating until we have sorted the array from the high-end down 
+ * to the smallest element. O(N)
+ * Asymptotically optimal - O(N Lg N)   // high constant factor, not often used
+ * This implementation not withstanding, can be made to sort in-place (use inout)
+ * Not a Stable sorting algorithm - but can be made so with modifications
+ */
 func heapSort(_ arr: [Int]) -> [Int] {
 	var arr = arr
 
@@ -160,12 +233,30 @@ func heapSort(_ arr: [Int]) -> [Int] {
 }
 
 
-// quickSort operates in n^2 in the worst case but averages n lg n and 
-// is very often faster than heapSort/mergeSort for its small constant factor
-//
-// partitions input array into values < pivot, pivot, and >= pivot
-// sorts the two edge partitions by calling itself on smaller subarrays
-//
+/* Although Quick-sort has a poor worst-case time O(n^2), its expected running
+ * time is O(N Lg N). Further, it has a very low constant factor which makes it
+ * in practice very fast, usually outperforming other comparison sorters.
+ * It is an in-place sort as well. It does not provide Stable sorting by default,
+ * but can be modified to provide that.
+ * Another Divide-and-Conquer algorithm. Like Merge-sort it divides the input up
+ * into two halves and calls itself on these sub-arrays. Here though, the
+ * partition function determines where to make the split. It is also what does
+ * the "sorting".
+ * The partition function picks, somewhat arbitrarily, the end value in the array
+ * to be the value that will descriminate the left and right sides of the partition.
+ * It then iterates over the array and values less than this pivot value is moved
+ * to the left side of the array and the partition location is pushed up. This is
+ * continued for the entire array and the final partition location is returned.
+ * when this partition function finishes, all values to the left of the partition
+ * will be less than the pivot value, all on the right equal or larger. This is
+ * not sorted, but a weaker state. But Quick-sort accomplishes sorting by doing
+ * this on smaller and smaller parts of the input array until array is sorted.
+ *
+ * The performance depends on how balanced the partitioning is, which depends on
+ * how suitable the pivot value is. The standard implementation just picks the
+ * last value in the array (sub-array under consideration). This is fine when
+ * the input array is random, no reason any other value would be better.
+ */
 func quickSort(_ arr: inout [Int], _ start: Int, _ end: Int) {
 
 	func partition() -> Int {
@@ -190,10 +281,17 @@ func quickSort(_ arr: inout [Int], _ start: Int, _ end: Int) {
 } 
 
 
-// quickSort with random pivoting
-// Now no input can illicit the worst running time. My testing shows this
-// slower than the regular quickSort on random arrays. Higher constant factor.
-//
+/* If we have reason to believe that the input array's values are not random,
+ * but distributed in some way not known to us, or just too hard to find,
+ * or that a malevalant actor wishes to construct the inputs so as to illicit
+ * from our Quick-sort O(N^2), we can modify Quick-sort so that no input can
+ * illicit poor performance from us. The function below is the same as above
+ * except that another helper function is added that swaps the last element
+ * in the array under consideration with a random element in said array. Then
+ * partition is allowed to process as usual, taking the last array value as the
+ * pivot.
+ * Realize that this version has a higher constant factor.
+ */
 func quickSort_random(_ arr: inout [Int], _ start: Int, _ end: Int) {
 
 	func partition_random() -> Int {
@@ -224,7 +322,6 @@ func quickSort_random(_ arr: inout [Int], _ start: Int, _ end: Int) {
 }
 
 
-
 // The below algorithms do not use comparison to sort! They are therefore not
 // bound to the best case running time of n lg n. They can run in linear time!
 // at the cost that some conditions must be met by the data to be sorted.
@@ -240,7 +337,8 @@ func quickSort_random(_ arr: inout [Int], _ start: Int, _ end: Int) {
 // If data can be negative integers: add parameter for lowest value. Size of storage
 // is now k-smallest+1. To map values into storage: arr[i] - smallest.
 //
-// it is also Stable: duplicates appear in results in same order as they do in input array.
+// Does not sort in-place: new arrays need to be created to perform the work.
+// It is also Stable: duplicates appear in results in same order as they do in input array.
 //
 func countingSort(_ arr: [Int], _ k: Int) -> [Int] {
 
@@ -332,7 +430,6 @@ func countingSort_obj<T: NodeContainer_p>(_ arr: [T], _ k: Int) -> [T] {
 
 	return results
 }
-
 
 
 // another sorting algorithm, with expected running time of O(n) is bucketSort
