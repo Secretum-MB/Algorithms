@@ -79,9 +79,9 @@ public struct BinarySearchTree<Element: Comparable> {
 	public func size(from node: NodeBT<Element>?, _ counter: (Int) -> Int) -> Int {
 
 		if node != nil {
-			size(from: node?.left, counter)
-			counter(1)
-			size(from: node?.right, counter)
+			_ = size(from: node?.left, counter)
+			_ = counter(1)
+			_ = size(from: node?.right, counter)
 		}
 		return counter(0)
 	}

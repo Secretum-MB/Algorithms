@@ -1,4 +1,28 @@
 /*
+ Important note for Swift:
+ If you are building structs that need have two or more properties that refer to
+ other objects (class instances or other structs), for example, vertices for
+ graphs, nodes for queues, etc. you need those objects to be class instances,
+ not structs.
+ The reason is that structs are value-types and two properties (head/tail, for 
+ example) that refer to them do not refer to the same struct, but different 
+ instances of it. In C, these properties hold pointers to the SAME struct, in
+ Swift, two value-type objects exists, in different places in memory.
+ The elements are like twins seperated at birth and are differently affected by
+ the mutating operations they experiance.
+
+ This is not solved by using inout as the properties (i.e. head/tail) still
+ store values that are copies of the struct at the inout position. 
+
+ (this could be worked around if you were willing to work with UnsafeRawPointer) 
+ This is not a problem if there is only one property, such as head or root. 
+ Also, in the case of a single property, the struct elements can have multiple 
+ fields, such as next/prev, left/right, etc., the problem is with the data
+ structure which needs to refer to the structs.
+*/
+
+
+/*
  Heap - an optimal implementation of a Priority Queue
  A heap, or binary heap, data structure is an array implementation of a nearly
  complete binary tree. Binary because elements have at most two children, left

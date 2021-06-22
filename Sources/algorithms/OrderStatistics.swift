@@ -101,6 +101,10 @@ func randomizedSelect(_ arr: [Int], start: Int, end: Int, at i: Int) -> Int {
 // structured in some rational way. Obviously, if set is sorted you could select
 // in O(1) time. If set is in a balanced binary search tree, selection and
 // rank can be achieved in O(lg n) time (see Red-Black trees).
+// There is another divide and conquer approach that can reliably achieve O(n).
+// It also uses the quick-sort method above but q is not chosen randomly but by
+// finding the medium of mediums from a 2-dimensional array of the input array,
+// where each column of 5 numbers is sorted. Look it up if you're interested.
 //
 // Below is highly creative: we're using two Heaps (one augmented):
 // Below we can see that selection can be made from a Min Heap (Max also if we know n).
